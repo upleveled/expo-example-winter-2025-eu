@@ -17,6 +17,7 @@ const config: ExpoConfig = {
       foregroundImage: './assets/images/adaptive-icon.png',
       backgroundColor: '#ffffff',
     },
+    package: 'com.upleveled.expo_example_winter_2025_eu',
   },
   web: {
     bundler: 'metro',
