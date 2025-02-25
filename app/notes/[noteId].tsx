@@ -1,15 +1,9 @@
-import {
-  Link,
-  useFocusEffect,
-  useLocalSearchParams,
-  useRouter,
-} from 'expo-router';
+import { Link, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '../../constants/Colors';
 import type { Note as NoteType } from '../../migrations/00003-createTableNotes';
 import type { NoteResponseBodyGet } from '../api/notes/[noteId]+api';
-import type { UserResponseBodyGet } from '../api/user+api';
 
 const styles = StyleSheet.create({
   container: {
@@ -40,51 +34,39 @@ const styles = StyleSheet.create({
 
 export default function Note() {
   const { noteId } = useLocalSearchParams();
-  const [note, setNote] = useState<NoteType | null>(null);
-
-  const router = useRouter();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [note, setNote] = useState<NoteType>();
 
   useFocusEffect(
     useCallback(() => {
-      async function getUserAndLoadNote() {
+      async function loadNote() {
         if (typeof noteId !== 'string') {
           return;
         }
 
-        const [userResponse, noteResponse]: [
-          UserResponseBodyGet,
-          NoteResponseBodyGet,
-        ] = await Promise.all([
-          fetch('/api/user').then((response) => response.json()),
-          fetch(`/api/notes/${noteId}`).then((response) => response.json()),
-        ]);
+        const response = await fetch(`/api/notes/${noteId}`);
+        const responseBody: NoteResponseBodyGet = await response.json();
 
-        if ('error' in userResponse) {
-          router.replace(`/(auth)/login?returnTo=/notes/${noteId}`);
+        if ('error' in responseBody) {
+          setErrorMessage(responseBody.error);
+          return;
         }
 
-        if ('note' in noteResponse) {
-          setNote(noteResponse.note);
-        }
+        setNote(responseBody.note);
+        setErrorMessage(null);
       }
 
-      getUserAndLoadNote().catch((error) => {
+      loadNote().catch((error) => {
         console.error(error);
       });
-    }, [noteId, router]),
+    }, [noteId]),
   );
 
-  if (typeof noteId !== 'string') {
-    return null;
-  }
-
-  if (!note) {
+  if (errorMessage || !note) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Access Denied</Text>
-        <Text style={styles.textContent}>
-          You do not have permission to access this note
-        </Text>
+        <Text style={styles.title}>Error loading note {noteId}</Text>
+        <Text style={styles.textContent}>{errorMessage}</Text>
         <Link href="/(tabs)/notes" style={{ color: colors.text }}>
           Back to notes
         </Link>
