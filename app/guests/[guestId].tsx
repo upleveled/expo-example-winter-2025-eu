@@ -10,7 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import placeholder from '../../assets/candidate-default.avif';
+import placeholder from '../../assets/images/candidate-default.avif';
 import { colors } from '../../constants/Colors';
 import type { GuestResponseBodyGet } from '../api/[guestId]+api';
 
@@ -146,14 +146,14 @@ export default function GuestPage() {
     <View style={styles.container}>
       <View style={styles.avatar}>
         {/* Use dynamic import of images */}
-        {/* <Image
+        <Image
           style={styles.avatarImage}
           source={{
             uri: `https://res.cloudinary.com/trueque-image/image/upload/v1713269496/guest-${guestId}.webp`,
           }}
           placeholder={placeholder}
           placeholderContentFit="cover"
-        /> */}
+        />
       </View>
       {isEditing ? (
         <>
