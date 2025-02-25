@@ -27,7 +27,7 @@ const config: ExpoConfig = {
     [
       'expo-router',
       {
-        origin: 'https://evanbacon.dev/',
+        origin: 'https://expo-example-winter-2025-eu.vercel.app/',
       },
     ],
     [
