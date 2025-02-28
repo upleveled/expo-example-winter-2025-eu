@@ -1,11 +1,12 @@
 import { Poppins_400Regular, useFonts } from '@expo-google-fonts/poppins';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, SafeAreaView, StyleSheet } from 'react-native';
 import GuestItem from '../../components/GuestItem';
 import { colors } from '../../constants/Colors';
 import type { Guest } from '../../migrations/00000-createTableGuests';
-import type { GuestsResponseBodyGet } from '../api/guests+api';
+import type { GuestsResponseBodyGet } from '../api/guests/index+api';
+import type { UserResponseBodyGet } from '../api/user+api';
 
 const styles = StyleSheet.create({
   container: {
@@ -20,12 +21,16 @@ const styles = StyleSheet.create({
   },
 });
 
-export default function App() {
+export default function Guests() {
   const [guests, setGuests] = useState<Guest[]>([]);
+  const [isStale, setIsStale] = useState(true);
   const [fontsLoaded] = useFonts({
     Poppins_400Regular,
   });
-  const [isStale, setIsStale] = useState(true);
+
+  const router = useRouter();
+
+  // const renderItem = (item: { item: User }) => <UserItem user={item.item} />;
 
   const renderItem = (item: { item: Guest }) => (
     <GuestItem guest={item.item} setIsStale={setIsStale} />
@@ -33,32 +38,36 @@ export default function App() {
 
   useFocusEffect(
     useCallback(() => {
-      async function getGuests() {
-        try {
-          const response = await fetch('/api/guests', {
-            headers: {
-              Cookie: 'name=value',
-            },
-          });
-          const body: GuestsResponseBodyGet = await response.json();
+      if (!isStale) return;
 
-          setGuests(body.guests);
-          setIsStale(false);
-        } catch (error) {
-          console.error(error);
+      async function getUserAndGuests() {
+        const [userResponse, guestsResponse]: [
+          UserResponseBodyGet,
+          GuestsResponseBodyGet,
+        ] = await Promise.all([
+          fetch('/api/user').then((response) => response.json()),
+          fetch('/api/guests').then((response) => response.json()),
+        ]);
+
+        setIsStale(false);
+
+        if ('error' in userResponse) {
+          router.replace('/(auth)/login?returnTo=/(tabs)/guests');
+          return;
         }
+
+        if ('error' in guestsResponse) {
+          setGuests([]);
+          return;
+        }
+
+        setGuests(guestsResponse.guests);
       }
 
-      if (isStale) {
-        getGuests().catch((error) => {
-          console.error(error);
-        });
-      }
-
-      getGuests().catch((error) => {
+      getUserAndGuests().catch((error) => {
         console.error(error);
       });
-    }, [isStale]),
+    }, [isStale, router]),
   );
 
   if (!fontsLoaded) {
